@@ -1,24 +1,21 @@
-const { Server } = require('socket.io');
-const http = require('http');
+const WebSocket = require('ws');
 
-const server = http.createServer();
-const io = new Server(server);
+const wss = new WebSocket.Server({ port: process.env.PORT || 8080 });
 
-io.on('connection', (socket) => {
+wss.on('connection', function connection(ws) {
   console.log('Client connected');
 
-  socket.on('message', (message) => {
-    console.log('Received:', message);
+  ws.on('message', function incoming(message) {
+    console.log('Received: %s', message);
 
-    io.emit('message', message);
+    wss.clients.forEach(function each(client) {
+      if (client !== ws && client.readyState === WebSocket.OPEN) {
+        client.send(message);
+      }
+    });
   });
 
-  socket.on('disconnect', () => {
+  ws.on('close', function close() {
     console.log('Client disconnected');
   });
-});
-
-const PORT = process.env.PORT || 8080;
-server.listen(PORT, () => {
-  console.log(`WebSocket server listening on port ${PORT}`);
 });
